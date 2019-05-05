@@ -1,10 +1,10 @@
 import numpy as np 
 import random
 from qiskit.quantum_info import Pauli 
-from qiskit_aqua import Operator, QuantumInstance
-from qiskit_aqua.algorithms import VQE, ExactEigensolver
-from qiskit_aqua.components.optimizers import L_BFGS_B, NELDER_MEAD, CG, COBYLA
-from qiskit_aqua.components.variational_forms import RY, RYRZ
+from qiskit.aqua import Operator, QuantumInstance
+from qiskit.aqua.algorithms import VQE, ExactEigensolver
+from qiskit.aqua.components.optimizers import L_BFGS_B, NELDER_MEAD, CG, COBYLA
+from qiskit.aqua.components.variational_forms import RY, RYRZ
 from qiskit import Aer
 
 
@@ -16,7 +16,7 @@ class GraphColorVQE(object):
 
   def run(self, exact=False):
     Hamiltonian = self.generate_ising_hamiltonian(self.graphcover)
-    Operator = self.get_qubitops(Hamiltonian)
+    Operator = self.get_qubitops(Hamiltonian, self.verbose)
 
     if exact:
       exact_eigensolver = ExactEigensolver(Operator, k=1)
@@ -52,7 +52,7 @@ class GraphColorVQE(object):
     return H
 
   @staticmethod
-  def get_qubitops(H):
+  def get_qubitops(H, verbose):
     """Generate Pauling based Hamiltonian operator for the graph coloring problem. 
     Returns:
         operator.Operator, float: operator for the Hamiltonian 
@@ -73,14 +73,13 @@ class GraphColorVQE(object):
                 zp[i] = True
                 zp[j] = True
                 pauli_list.append([ H[i, j], Pauli(zp, xp)]) 
-                s += ' + {}*Z[{}]*Z[{}]'.format(H[i,j], i, j)
-    self.nqbits = num_nodes
-    if self.verbose > 0:
+                s += ' + {}*Z[{}]*Z[{}]'.format(H[i,j], i, j) 
+    if verbose > 0:
       print(s)
     return Operator(paulis=pauli_list) 
 
   @staticmethod
-  def vqe(Operator, nqubits, niter):
+  def vqe(Operator, niter, nqubits):
     """Run variational quantum eigensolver
 
     """

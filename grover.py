@@ -31,8 +31,8 @@ class GraphColorGrover(object):
 
     backend = BasicAer.get_backend('qasm_simulator')
     quantum_instance = QuantumInstance(backend, shots=self.niter)
-    self.result = grover.run(quantum_instance)
-    return self.result
+    self.result = grover.run(quantum_instance) 
+    return self.result['top_measurement'][::-1]
 
   @staticmethod
   def graphcover_constraints(gc, ncolors):
@@ -56,18 +56,6 @@ class GraphColorGrover(object):
     for c in constraints: 
       dimacs += " ".join([str(i) for i in c]) + " 0\n"
     return dimacs
-
-  @staticmethod
-  def extract_solution(result):
-    if exact:
-      i= np.where(result['eigvecs'][0])[0][0]
-    else:
-      p = result['eigvecs'][0]
-      i = random.choices(range(len(p)), weights=[np.linalg.norm(i) for i in p])
-
-    bitsolution = bin(i)[2:]
-    pad = int(np.log2(result['eigvecs'].shape[1]))-len(bitsolution)
-    return pad*'0' + bitsolution
 
   @staticmethod
   def visualize(result):
