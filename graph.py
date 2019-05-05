@@ -19,32 +19,11 @@ class GraphColoring(object):
           self.edges.append([i,j]) 
     return self.edges
 
-  def check_solution(self, solution):
-    assigned = np.where(np.array(list(bits))=='1')[0] % self.ncolors 
-    if len(self.nnodes) != idx:
-      return False 
-    for i, j in self.edges:
-      if assigned[i] == assigned[j]:
-        return False 
-    return True
-
-  def solution_from_bits(self, bits):
-    colors = ['blue', 'green', 'red', 'yellow', 'black']
-    idx = np.where(np.array(list(bits))=='1')[0] % self.ncolors 
-    solution = [colors[i] for i in idx]
-    return solution
-    
-  def render_graph(self, solution=None):
-    if type(solution) == str:
-        solution = self.solution_from_bits(solution)
-    if solution and len(solution) > self.nnodes:
-        print("Multiple colors assigned to single node.")
-        return
+  def render_graph(self): 
     options = { 
       'nodelist': list(range(self.nnodes)),
       'node_size': 3000, 
-      'width': 3,
-      'node_color': solution
+      'width': 3, 
     }
     G = nx.Graph()
     G.add_edges_from(self.edges) 
