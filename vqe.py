@@ -14,22 +14,77 @@ class GraphColorVQE(object):
     self.niter = niter 
     self.verbose = verbose
 
-  def run(self, exact=False):
+  def run_sim(self):
+    """ Use VQE on a simulator to determine ground energy eigenvectors of the 
+    hamiltonian 
+
+    """
+    self.operator, var_form, opt = self.generate_VQE_args()
+
+    backend = Aer.get_backend('statevector_simulator')
+    quantum_instance = QuantumInstance(backend=backend)
+    vqe = VQE(self.operator, var_form, opt) 
+
+    self.result = vqe.run(quantum_instance)
+    solution = self.extract_solution(self.result, False)
+    return solution
+
+  def run_exact(self):
+    """ Use an exact eigensolver to determine ground energy eigenvectors of the 
+    hamiltonian 
+
+    """
+    self.operator, var_form, opt = self.generate_VQE_args()
+    exact_eigensolver = ExactEigensolver(self.operator, k=1)
+    self.result = exact_eigensolver.run()
+
+    solution = self.extract_solution(self.result, True)
+    return solution
+
+  def run_IBMQ(self):
+    """ Use VQE on a real device to determine ground energy eigenvectors of the 
+    hamiltonian 
+
+    """
+    self.operator, var_form, opt = self.generate_VQE_args()
+
+    IBMQ.load_accounts()
+    backend = self.find_least_busy()
+
+    quantum_instance = QuantumInstance(backend=backend)
+    vqe = VQE(self.operator, var_form, opt) 
+
+    self.result = vqe.run(quantum_instance)
+    solution = self.extract_solution(self.result, False)
+    return solution
+
+  def generate_VQE_args(self):
+    """ Generate Operator, Variational Form and Optimizer for graph coloring problem
+
+    """
     Hamiltonian = self.generate_ising_hamiltonian(self.graphcover)
     Operator = self.get_qubitops(Hamiltonian, self.verbose)
 
-    if exact:
-      exact_eigensolver = ExactEigensolver(Operator, k=1)
-      self.result = exact_eigensolver.run()
-    else:
-      self.result = self.vqe(Operator, self.niter, Hamiltonian.shape[0])
+    var_form = RYRZ(num_qubits=Hamiltonian.shape[0], 
+                    depth=1, entanglement="full", 
+                    initial_state=None)
+    opt = CG(maxiter=self.niter)
 
-    solution = self.extract_solution(self.result, exact)
-    return solution
+    return Operator, var_form, opt
+
+  @staticmethod
+  def find_least_busy(n_qubits=5):
+    fltr = lambda x: x.configuration().n_qubits > n_qubits and not x.configuration().simulator
+    large_enough_devices = IBMQ.backends(filters=fltr)
+    backend = least_busy(large_enough_devices)
+    print("Using backend: " + backend.name())
+
+    return backend
 
   @staticmethod
   def generate_ising_hamiltonian(gc, cost=100.):
-    """Generate ising Hamiltonian for graph coloring problem. 
+    """Generate ising Hamiltonian for the given graph coloring problem. 
+
     Returns:
         numpy.ndarray: the ising Hamiltonian 
     """
@@ -55,7 +110,7 @@ class GraphColorVQE(object):
   def get_qubitops(H, verbose):
     """Generate Pauling based Hamiltonian operator for the graph coloring problem. 
     Returns:
-        operator.Operator, float: operator for the Hamiltonian 
+        operator.Operator: operator for the Hamiltonian 
     """
     num_nodes = H.shape[0]
     pauli_list = [] 
@@ -78,32 +133,30 @@ class GraphColorVQE(object):
       print(s)
     return Operator(paulis=pauli_list) 
 
-  @staticmethod
-  def vqe(Operator, niter, nqubits):
-    """Run variational quantum eigensolver
-
-    """
-    var_form = RYRZ(num_qubits=nqubits, 
-                    depth=1, entanglement="full", 
-                    initial_state=None)
-    opt = CG(maxiter=niter)
-    backend = Aer.get_backend('statevector_simulator')
-    quantum_instance = QuantumInstance(backend=backend)
-    vqe = VQE(Operator, var_form, opt)
-    return vqe.run(quantum_instance)
 
   @staticmethod
   def extract_solution(result, exact=False):
+    """Extract a bit solution from the eigenvector generated in the VQE run
+    Returns:
+        string: solution of the graph cover in 01 format
+    """
     if exact:
       i= np.where(result['eigvecs'][0])[0][0]
     else:
-      p = result['eigvecs'][0]
-      i = random.choices(range(len(p)), weights=[np.linalg.norm(i) for i in p])
+      p = result['eigvecs'][0] 
+      i = max(range(len(p)), key=lambda i: abs(p[i]))
 
     bitsolution = bin(i)[2:]
     pad = int(np.log2(result['eigvecs'].shape[1]))-len(bitsolution)
     bitsolution = pad*'0' + bitsolution
     return bitsolution[::-1]
+
+  def stats(self):
+    """ Extract number of qbits, number of gates needed to run this instance 
+
+    """
+    nqbits = self.operator.num_qubits
+
 
     
 
