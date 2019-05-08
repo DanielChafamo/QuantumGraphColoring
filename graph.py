@@ -10,9 +10,10 @@ class GraphColoring(object):
     self.edges = edges
     self.nnodes = nnodes 
     self.ncolors = ncolors
+    self.pos = None
 
   def rand_graph(self, nnodes, p=0.5):  
-    """ Generate a random graph
+    """ Generate a random graph  
     Args:
         nnodes: number of nodes in graph 
         p: probability of having an edge between any two nodes
@@ -25,6 +26,26 @@ class GraphColoring(object):
       for j in range(i+1):
         if i!=j and np.random.rand() <= p:
           self.edges.append([i,j]) 
+    return self.edges
+
+  def edgenum_rand_graph(self, nnodes, nedges):
+    """ Generate a random graph with given number of edges
+    Args:
+        nnodes: number of nodes in graph 
+        nedges: number of edges 
+
+    Returns:
+        edges: list of edges in graph 
+    """
+    if nedges > nnodes*(nnodes-1)/2:
+      print("Not possible to have {} edges amongst {} nodes".format(nedges, nnodes))
+    self.nnodes = nnodes 
+    for i in range(nedges):
+      f,t = np.random.randint(0,self.nnodes,2) 
+      while t == f or [t,f] in self.edges or [f,t] in self.edges:
+        f,t = np.random.randint(0,self.nnodes,2) 
+      self.edges.append([f,t])
+
     return self.edges
 
   def check_solution(self, solution):
@@ -77,8 +98,9 @@ class GraphColoring(object):
     }
     G = nx.Graph()
     G.add_edges_from(self.edges) 
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True, **options)
+    if self.pos is None:
+      self.pos = nx.spring_layout(G)
+    nx.draw(G, self.pos, with_labels=True, **options)
     plt.show()
 
 

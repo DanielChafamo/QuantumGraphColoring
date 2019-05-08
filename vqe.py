@@ -72,7 +72,7 @@ class GraphColorVQE(object):
     var_form = RYRZ(num_qubits=Hamiltonian.shape[0], 
                     depth=5, entanglement="linear", 
                     initial_state=None)
-    opt = SPSA(maxiter=self.niter)
+    opt = SPSA(max_trials=self.niter)
     print("Operator with number of qubits: {}".format(Operator.num_qubits))
 
     return Operator, var_form, opt
@@ -87,7 +87,7 @@ class GraphColorVQE(object):
     return backend
 
   @staticmethod
-  def generate_ising_hamiltonian(gc, cost=100.):
+  def generate_ising_hamiltonian(gc, cost=100., factor=100.):
     """Generate ising Hamiltonian for the given graph coloring problem. 
 
     Returns:
@@ -107,8 +107,8 @@ class GraphColorVQE(object):
     for i, j in gc.edges:
       if i != j:
         for c in range(gc.ncolors):
-          H[i*gc.ncolors+c, j*gc.ncolors+c] = cost/100 
-          H[j*gc.ncolors+c, i*gc.ncolors+c] = cost/100 
+          H[i*gc.ncolors+c, j*gc.ncolors+c] = cost/factor 
+          H[j*gc.ncolors+c, i*gc.ncolors+c] = cost/factor 
     return H
 
   @staticmethod

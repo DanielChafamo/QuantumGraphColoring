@@ -65,8 +65,8 @@ class GraphColorGrover(object):
     constraints = self.graphcover_constraints()
     CNF = self.dimacs_format(constraints, self.gc.nnodes*self.gc.ncolors)
     self.oracle = LogicalExpressionOracle(CNF, optimization='espresso')
-    # mct_mode='advanced'
-    return Grover(self.oracle, incremental=True)
+    
+    return Grover(self.oracle, incremental=True, mct_mode='advanced')
 
   def graphcover_constraints(self):
     """ Render Graph Coloring problem into a set of boolean constraints whose 
