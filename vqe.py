@@ -3,9 +3,11 @@ import random
 from qiskit.quantum_info import Pauli 
 from qiskit.aqua import Operator, QuantumInstance
 from qiskit.aqua.algorithms import VQE, ExactEigensolver
-from qiskit.aqua.components.optimizers import L_BFGS_B, NELDER_MEAD, CG, COBYLA
+from qiskit.aqua.components.optimizers import SPSA, L_BFGS_B, NELDER_MEAD, CG, COBYLA
 from qiskit.aqua.components.variational_forms import RY, RYRZ
 from qiskit import Aer
+from qiskit.providers.ibmq import least_busy 
+from qiskit import IBMQ
 
 
 class GraphColorVQE(object):
@@ -35,6 +37,7 @@ class GraphColorVQE(object):
 
     """
     self.operator, var_form, opt = self.generate_VQE_args()
+
     exact_eigensolver = ExactEigensolver(self.operator, k=1)
     self.result = exact_eigensolver.run()
 
@@ -48,8 +51,9 @@ class GraphColorVQE(object):
     """
     self.operator, var_form, opt = self.generate_VQE_args()
 
+    nqbits = self.operator.num_qubits
     IBMQ.load_accounts()
-    backend = self.find_least_busy()
+    backend = self.find_least_busy(nqbits)
 
     quantum_instance = QuantumInstance(backend=backend)
     vqe = VQE(self.operator, var_form, opt) 
@@ -66,9 +70,10 @@ class GraphColorVQE(object):
     Operator = self.get_qubitops(Hamiltonian, self.verbose)
 
     var_form = RYRZ(num_qubits=Hamiltonian.shape[0], 
-                    depth=1, entanglement="full", 
+                    depth=5, entanglement="linear", 
                     initial_state=None)
-    opt = CG(maxiter=self.niter)
+    opt = SPSA(maxiter=self.niter)
+    print("Operator with number of qubits: {}".format(Operator.num_qubits))
 
     return Operator, var_form, opt
 
@@ -153,7 +158,7 @@ class GraphColorVQE(object):
 
   def stats(self):
     """ Extract number of qbits, number of gates needed to run this instance 
-
+    depth of circuit (number of ops on the critical path) circuit.depth()
     """
     nqbits = self.operator.num_qubits
 

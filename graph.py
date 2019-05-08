@@ -12,6 +12,14 @@ class GraphColoring(object):
     self.ncolors = ncolors
 
   def rand_graph(self, nnodes, p=0.5):  
+    """ Generate a random graph
+    Args:
+        nnodes: number of nodes in graph 
+        p: probability of having an edge between any two nodes
+
+    Returns:
+        edges: list of edges in graph 
+    """
     self.nnodes = nnodes 
     for i in range(nnodes):
       for j in range(i+1):
@@ -20,28 +28,45 @@ class GraphColoring(object):
     return self.edges
 
   def check_solution(self, solution):
-    assigned = np.where(np.array(list(bits))=='1')[0] % self.ncolors 
-    if len(self.nnodes) != idx:
+    """ Assess whether the provided solution satisfies the graph coloring problem
+    Args:
+        solution (string): proposed solution 
+            the first 'ncolors' bits correspond to the first node and so on
+            index with value '1' gives asssigned color to that node
+
+    """
+    assigned = np.where(np.array(list(solution))=='1')[0] % self.ncolors 
+
+    if self.nnodes != len(assigned):
+      print("Multiple colors assigned to single node.")
       return False 
     for i, j in self.edges:
       if assigned[i] == assigned[j]:
+        print("Edge ({}, {}) colored the same.".format(i,j))
         return False 
     return True
 
   def solution_from_bits(self, bits):
+    """ Generates list of colors from a sequence of bits solution
+
+    """
     colors = ['blue', 'green', 'red', 'yellow', 'black']
     idx = np.where(np.array(list(bits))=='1')[0] % self.ncolors 
     solution = [colors[i] for i in idx]
     return solution
     
   def render_graph(self, solution=None):
-    if type(solution) == str:
-      solution = self.solution_from_bits(solution)
-    if solution and len(solution) != self.nnodes:
-      print("Multiple colors assigned to single node.")
-      return
-    if solution and not self.check_solution(solution):
-      print("Graph coloring not satisfied!")
+    """ Draws graph using networkx. Applies coloring given by solution if provided
+
+    """
+    if solution:
+      if not self.check_solution(solution):
+        print("Graph coloring not satisfied!")
+      else:
+        print("Graph coloring satisfied!")
+      solution = self.solution_from_bits(solution) 
+      if len(solution) != self.nnodes:
+        return
 
     options = { 
       'nodelist': list(range(self.nnodes)),
@@ -55,5 +80,6 @@ class GraphColoring(object):
     pos = nx.spring_layout(G)
     nx.draw(G, pos, with_labels=True, **options)
     plt.show()
+
 
 

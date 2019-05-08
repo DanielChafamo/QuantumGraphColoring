@@ -62,11 +62,11 @@ class GraphColorGrover(object):
     implementation
 
     """
-    constraints = self.graphcover_constraints(self.gc)
+    constraints = self.graphcover_constraints()
     CNF = self.dimacs_format(constraints, self.gc.nnodes*self.gc.ncolors)
     self.oracle = LogicalExpressionOracle(CNF, optimization='espresso')
-    
-    return Grover(self.oracle, incremental=True, mct_mode='advanced')
+    # mct_mode='advanced'
+    return Grover(self.oracle, incremental=True)
 
   def graphcover_constraints(self):
     """ Render Graph Coloring problem into a set of boolean constraints whose 
@@ -86,7 +86,7 @@ class GraphColorGrover(object):
       constraints.append([i*ncolors+j+1 for j in range(ncolors)])
 
     # different color for neighbours
-    for i, j in edges:
+    for i, j in self.gc.edges:
       for k in range(ncolors):
         constraints.append([-(i*ncolors+k+1), -(j*ncolors+k+1)])
 
@@ -94,15 +94,26 @@ class GraphColorGrover(object):
 
   def stats(self):
     """ Extract number of qbits, number of gates needed to run this instance 
+    # depth of circuit (number of ops on the critical path) circuit.depth()
 
     """
     circuit = self.oracle.circuit
     nqubits = circuit.width()
+    ops = groverGC.oracle.circuit.count_ops()
+    total_nops = sum(ops.values())
 
-  def visualize(self):
-    # graph color vis
-    plot_histogram(self.result['measurement'])
-    plt.show()
+  def visualize(self, nsamples=20): 
+    """ Plot a histogram of the top 'nsamples' results from the grover run
+    
+    Returns:
+        dict: top nsamples solutions and their count
+    """
+    d = self.result['measurement']
+    ks = sorted(d.keys(), key=lambda a:d[a])[-nsamples:]
+    d = {k:d[k] for k in ks} 
+    plot_histogram(self.result['measurement']) 
+
+    return d
 
   @staticmethod
   def dimacs_format(constraints, nvars): 
