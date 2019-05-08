@@ -57,16 +57,18 @@ class GraphColorGrover(object):
 
     return self.result['top_measurement'][::-1]
 
-  def generate_grover(self):
+  def generate_grover(self, incr=False, n_iters=None):
     """ Generate grover oracle and the full grover circuit using qiskit's 
     implementation
 
     """
+    if n_iters is None:
+      n_iters = int(2**((self.gc.nnodes*self.gc.ncolors - 1)/2.))
     constraints = self.graphcover_constraints()
     CNF = self.dimacs_format(constraints, self.gc.nnodes*self.gc.ncolors)
     self.oracle = LogicalExpressionOracle(CNF, optimization='espresso')
     
-    return Grover(self.oracle, incremental=True, mct_mode='advanced')
+    return Grover(self.oracle, incremental=incr, num_iterations=n_iters, mct_mode='advanced')
 
   def graphcover_constraints(self):
     """ Render Graph Coloring problem into a set of boolean constraints whose 
